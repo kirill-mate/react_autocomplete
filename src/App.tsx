@@ -1,47 +1,38 @@
-/* eslint-disable @typescript-eslint/indent */
-import React, { useMemo, useState } from 'react';
-import debounce from 'lodash.debounce';
-
+import React, { useState } from 'react';
 import './App.scss';
+
 import { peopleFromServer } from './data/people';
-import { Dropdown } from './components/Dropdown';
 import { Person } from './types/Person';
+import { Dropdown } from './components/Dropdown/Dropdown';
+import { Autocomplete } from './components/Autocomplete/Autocomplete';
 
 export const App: React.FC = () => {
   const [query, setQuery] = useState('');
-  const [appliedQuery, setAppliedQuery] = useState('');
+  const [filteredPeople, setFilteredPeople] = useState<Person[]>([]);
   const [focused, setFocused] = useState(false);
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
+
+  const handleChange = (
+    newQuery: string,
+    filtered: Person[],
+    isFocused: boolean,
+  ) => {
+    setQuery(newQuery);
+    setFilteredPeople(filtered);
+    setFocused(isFocused);
+
+    if (selectedPerson && newQuery !== selectedPerson.name) {
+      setSelectedPerson(null);
+    }
+  };
 
   const handlePersonSelect = (person: Person) => {
     setSelectedPerson(person);
     setQuery(person.name);
   };
 
-  const normalizedQuery = appliedQuery.trim().toLowerCase();
-
-  const filteredPeople =
-    normalizedQuery === ''
-      ? peopleFromServer
-      : peopleFromServer.filter(person =>
-          person.name.toLowerCase().includes(normalizedQuery),
-        );
-
-  const debouncedSetAppliedQuery = useMemo(
-    () => debounce((value: string) => setAppliedQuery(value), 300),
-    [],
-  );
-
-  function handleQueryChange(event: React.ChangeEvent<HTMLInputElement>) {
-    setQuery(event.target.value);
-    debouncedSetAppliedQuery(event.target.value);
-
-    if (selectedPerson) {
-      setSelectedPerson(null);
-    }
-  }
-
-  const noMatching = normalizedQuery !== '' && filteredPeople.length === 0;
+  const noMatching =
+    query.trim() !== '' && filteredPeople.length === 0 && focused;
 
   return (
     <div className="container">
@@ -53,20 +44,14 @@ export const App: React.FC = () => {
         </h1>
 
         <div className="dropdown is-active">
-          <div className="dropdown-trigger">
-            <input
-              type="text"
-              placeholder="Enter a part of the name"
-              data-cy="search-input"
-              className="input"
-              value={query}
-              onChange={handleQueryChange}
-              onFocus={() => setFocused(true)}
-              onBlur={() => setFocused(false)}
-            />
-          </div>
+          <Autocomplete
+            items={peopleFromServer}
+            delay={300}
+            onChange={handleChange}
+            query={query}
+          />
 
-          {focused && (
+          {focused && filteredPeople.length > 0 && (
             <Dropdown people={filteredPeople} onSelected={handlePersonSelect} />
           )}
         </div>
