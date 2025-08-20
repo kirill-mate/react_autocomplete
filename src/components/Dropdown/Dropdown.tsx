@@ -22,7 +22,7 @@ export const Dropdown = React.memo(function Dropdown({
       <div className="dropdown-content">
         {people.map(person => (
           <div
-            key={person.name}
+            key={person.slug}
             className="dropdown-item"
             data-cy="suggestion-item"
             onMouseDown={() => handleClick(person)}
